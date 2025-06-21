@@ -2,51 +2,61 @@ import sqlite3
 import random
 
 
+
+
+conn = sqlite3.connect("ludzie.db")
+
+cursor = conn.cursor()
+
 imiona = [
     'Jan', 'Piotr', 'Tomasz', 'Marek', 'Paweł', 'Andrzej', 'Krzysztof', 'Adam', 'Michał', 'Grzegorz',
-    'Łukasz', 'Marcin', 'Sebastian', 'Rafał', 'Kamil', 'Oliwia', 'Kamila', 'Julka', 'Patrycja', 'Filip', 'Bartosz', 'Jakub', 'Dominika'
+    'Łukasz', 'Marcin', 'Sebastian', 'Rafał', 'Kamil', 'Oliwia', 'Kamila', 'Julka', 'Patrycja', 'Filip', 'Bartosz',
+    'Jakub', 'Dominika'
 ]
+
+
 
 nazwiska = [
     'Kowalski', 'Nowak', 'Wiśniewski', 'Wójcik', 'Kowalczyk', 'Kamiński', 'Lewandowski', 'Zieliński',
     'Szymański', 'Woźniak', 'Dąbrowski', 'Kozłowski', 'Jankowski', 'Mazur', 'Krawczyk', 'Krakowiak', 'Stępa', 'Łuda'
 ]
 
-miasta = [
-    'Warszawa', 'Poznań', 'Katowice', 'Białystok', 'Radom', 'Gdańsk', 'Gdynia', 'Szczecin', 'Toruń', 'Kraków', 'Zielona Góra', 'Łódź', 'Wrocław', 'Bydgoszcz', 'Lublin', 'Częstochowa', 'Sosnowiec', 'Kielce', 'Rzeszów', 'Gliwice', 'Zabrze', 'Olsztyn', 'Bytom', 'Rybnik', 'Augustów', 'Opole', 'Płock', 'Koszalin', 'Kalisz'
-]
 
-conn = sqlite3.connect("ludzie.db")
 
-cursor = conn.cursor()
+mapa_kompanii = {
+    1: 'Warszawa',
+    2: 'Katowice',
+    3: 'Szczecin',
+    4: 'Białystok',
+    5: 'Gdynia',
+    6: 'Wrocław',
+    7: 'Lublin',
+    8: 'Poznań'
+}
+
 
 cursor.execute('\n'
-               '    CREATE TABLE IF NOT EXISTS podchorazowie (\n'
+               '    CREATE TABLE IF NOT EXISTS pchorki (\n'
                '        id INTEGER PRIMARY KEY AUTOINCREMENT,\n'
-               '        kompania integer NOT NULL,\n'
-               '        pluton INTEGER NOT NULL\n'
-               
+               '        lokalizacja text not null ,\n'
+               '        kompania integer NOT NULL\n'
                '        \n'
                '    )\n')
 
 
-
-
-
 rekordy = []
-for _ in range(1000):
+for _ in range(1500):
     imie = random.choice(imiona)
     nazwisko = random.choice(nazwiska)
     kompania = random.randint(1, 8)
     pluton = random.randint(1, 5)
-    lokalizacja = random.choice(miasta)
-    rekordy.append((kompania, pluton, imie, nazwisko, lokalizacja))
+    lokalizacja = mapa_kompanii[kompania]
+    rekordy.append((lokalizacja, kompania, pluton, imie, nazwisko))
 
-cursor.executemany("""
-    INSERT INTO podchorążowie (kompania, pluton, "imie", "nazwisko", "lokalizacja")
-    VALUES (?, ?, ?, ?, ?)
-""", rekordy)
-
+cursor.executemany('\n'
+                   '    INSERT INTO pchorki (lokalizacja, kompania, \"pluton\", \"imie\", \"nazwisko\")\n'
+                   '    VALUES (?, ?, ?, ?, ?)\n', rekordy)
+print("Dodano 150 losowych podchorążych do bazy danych.")
 
 
 
@@ -54,4 +64,4 @@ conn.commit()
 conn.close()
 
 
-
+print("udało się")
