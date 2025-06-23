@@ -1,214 +1,313 @@
-from tkinter import *
+import tkinter as tk
+from tkinter import ttk, messagebox
+import sqlite3
+import requests
+from bs4 import BeautifulSoup
+from tkintermapview import TkinterMapView
 
-import tkintermapview
+DB = 'ludzie.db'
 
-users:list = []
-class User:
-    def __init__(self, name, surname, location, posts):
-        self.name = name
-        self.surname = surname
-        self.location = location
-        self.posts = posts
-        self.coordinates = self.get_coordinates()
-        self.marker = map_vidget.set_marker(self.coordinates[0], self.coordinates[1])
+mapa_kompanii = {
+    1: 'Warszawa',
+    2: 'Katowice',
+    3: 'Szczecin',
+    4: 'Białystok',
+    5: 'Gdynia',
+    6: 'Wrocław',
+    7: 'Lublin',
+    8: 'Poznań'
+}
 
+def connect_db():
+    return sqlite3.connect(DB)
 
-    def get_coordinates(self)->list:
-        import requests
-        from bs4 import BeautifulSoup
-        address_url:str=f"https://pl.wikipedia.org/wiki/{self.location}"
+def get_coordinates(location):
+    try:
+        address_url = f"https://pl.wikipedia.org/wiki/{location}"
         response = requests.get(address_url).text
-        response_html = BeautifulSoup(response, "html.parser")
-        longitude:float=float(response_html.select(".longitude")[1].text.replace(",","."))
-        # print(longitude)
-        latitude:float=float(response_html.select(".latitude")[1].text.replace(",","."))
-        # print(latitude)
+        soup = BeautifulSoup(response, "html.parser")
+        longitude = float(soup.select(".longitude")[1].text.replace(",", "."))
+        latitude = float(soup.select(".latitude")[1].text.replace(",", "."))
         return [latitude, longitude]
-
-
-
-
-
-def add_user():
-    imie = entry_name.get()
-    nazwisko = entry_surname.get()
-    posty = entry_post.get()
-    miejscowosc = entry_location.get()
-    tmp_user = (User(name=imie, surname=nazwisko, location=miejscowosc, posts=posty))
-    users.append(tmp_user)
-
-
-
-    print(users)
-    entry_name.delete(0, END)
-    entry_surname.delete(0, END)
-    entry_post.delete(0, END)
-    entry_location.delete(0, END)
-
-    entry_name.focus()
-    show_users()
-
-def show_users():
-    listbox_lista_obiektów.delete(0, END)
-    for idx, user in enumerate(users):
-        listbox_lista_obiektów.insert(idx, f'{idx+1}.{user.name} {user.surname} {user.location} {user.posts} ')
-
-
-def remove_user():
-    idx=listbox_lista_obiektów.index(ACTIVE)
-    users[idx].marker.delete()
-    users.pop(idx)
-    show_users()
-
-def user_details():
-    idx=listbox_lista_obiektów.index(ACTIVE)
-    label_name_szczegóły_obiektu_wartość.configure(text=users[idx].name)
-    label_surname_szczegóły_obiektu_wartość.configure(text=users[idx].surname)
-    label_post_szczegóły_obiektu_wartość.configure(text=users[idx].posts)
-    label_location_szczegóły_obiektu_wartość.configure(text=users[idx].location)
-    map_vidget.set_position(users[idx].coordinates[0], users[idx].coordinates[1])
-    map_vidget.set_zoom(17)
-
-
-def edit_user():
-    idx=listbox_lista_obiektów.index(ACTIVE)
-    entry_name.insert(0, users[idx].name)
-    entry_surname.insert(0, users[idx].surname)
-    entry_post.insert(0, users[idx].posts)
-    entry_location.insert(0, users[idx].location)
-
-
-    button_dodaj_obiekt.configure(text='Zapisz', command=lambda:update_users(idx))
-
-def update_users(idx):
-    name=entry_name.get()
-    surname=entry_surname.get()
-    posts=entry_post.get()
-    location=entry_location.get()
-
-
-    users[idx].name = name
-    users[idx].surname = surname
-    users[idx].posts = posts
-    users[idx].location = location
-
-    users[idx].marker.delete()
-
-
-    users[idx].coordinates = users[idx].get_coordinates()
-    users[idx].marker = map_vidget.set_marker(users[idx].coordinates[0],users[idx].coordinates[1])
-
-    button_dodaj_obiekt.configure(text='Dodaj obiekt', command=add_user)
-
-    show_users()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-root = Tk()
-root.title("MapBook_ow")
-root.geometry("1024x768")
-
-# RAMKI
-ramka_lista_obiektów = Frame(root)
-ramka_formularz = Frame(root)
-ramka_szcegóły_obiektów = Frame(root)
-ramka_mapa = Frame(root)
-
-ramka_lista_obiektów.grid(row=0, column=0)
-ramka_formularz.grid(row=0, column=1)
-ramka_szcegóły_obiektów.grid(row=1, column=0)
-ramka_mapa.grid(row=2, column=0, columnspan=2)
-
-
-# RAMKA LISTA OBIEKTÓW
-
-label_lista_obiektów = Label(ramka_lista_obiektów, text="LiStA ObIeKtÓw:")
-label_lista_obiektów.grid(row=0, column=0, columnspan=3)
-listbox_lista_obiektów = Listbox(ramka_lista_obiektów)
-listbox_lista_obiektów.grid(row=1, column=0, columnspan=3)
-button_pokaż_szczegóły = Button(ramka_lista_obiektów, text="Pokaż szczegóły", command=user_details)
-button_pokaż_szczegóły.grid(row=2, column=0)
-button_edytuj_obiekt = Button(ramka_lista_obiektów, text="Edytuj obiekt", command=edit_user)
-button_edytuj_obiekt.grid(row=2, column=1)
-button_usuń_obiekt = Button(ramka_lista_obiektów, text="Usuń obiekt", command=remove_user)
-button_usuń_obiekt.grid(row=2, column=2)
-
-# RAMKA FORMULARZ
-label_formularz = Label(ramka_formularz, text="Formularz: ")
-label_formularz.grid(row=0, column=0, columnspan=2)
-label_name = Label(ramka_formularz, text="Imię:  ")
-label_name.grid(row=1, column=0, sticky=W)
-label_surname = Label(ramka_formularz, text="Nazwisko:   ")
-label_surname.grid(row=2, column=0, sticky=W)
-label_post = Label(ramka_formularz, text="Liczba postów:   ")
-label_post.grid(row=3, column=0, sticky=W)
-label_location = Label(ramka_formularz, text="Miejscowość: ")
-label_location.grid(row=4, column=0, sticky=W)
-
-
-entry_name = Entry(ramka_formularz)
-entry_name.grid(row=1, column=1,)
-entry_surname = Entry(ramka_formularz)
-entry_surname.grid(row=2, column=1,)
-entry_post = Entry(ramka_formularz)
-entry_post.grid(row=3, column=1,)
-entry_location = Entry(ramka_formularz)
-entry_location.grid(row=4, column=1,)
-
-button_dodaj_obiekt = Button(ramka_formularz, text="Dodaj obiekt", command=add_user)
-button_dodaj_obiekt.grid(row=5, column=1, columnspan=2)
-
-# RAMKA SZCZEGÓŁY OBIEKTU
-label_szczegóły_obiektu = Label(ramka_szcegóły_obiektów, text="Szczegóły użytkownika:")
-label_szczegóły_obiektu.grid(row=0, column=0, sticky=W)
-
-label_name_szczegóły_obiektu = Label(ramka_szcegóły_obiektów, text="Imię:   ")
-label_name_szczegóły_obiektu.grid(row=1, column=0,)
-
-label_name_szczegóły_obiektu_wartość = Label(ramka_szcegóły_obiektów, text=".....   ")
-label_name_szczegóły_obiektu_wartość.grid(row=1, column=1, )
-
-label_surname_szczegóły_obiektu_ = Label(ramka_szcegóły_obiektów, text="Nazwisko:   ")
-label_surname_szczegóły_obiektu_.grid(row=1, column=2,)
-
-label_surname_szczegóły_obiektu_wartość = Label(ramka_szcegóły_obiektów, text=".....   ")
-label_surname_szczegóły_obiektu_wartość.grid(row=1, column=3, )
-
-label_post_szczegóły_obiektu_wartość = Label(ramka_szcegóły_obiektów, text="Liczba postów:   ")
-label_post_szczegóły_obiektu_wartość.grid(row=1, column=4, )
-
-label_post_szczegóły_obiektu_wartość = Label(ramka_szcegóły_obiektów, text=".....   ")
-label_post_szczegóły_obiektu_wartość.grid(row=1, column=5, )
-
-label_location_szczegóły_obiektu_wartość = Label(ramka_szcegóły_obiektów, text="Miejscowość:   ")
-label_location_szczegóły_obiektu_wartość.grid(row=1, column=6, )
-
-label_location_szczegóły_obiektu_wartość = Label(ramka_szcegóły_obiektów, text=".....   ")
-label_location_szczegóły_obiektu_wartość.grid(row=1, column=7, )
-
-
-# RAMKA MAPA
-map_vidget = tkintermapview.TkinterMapView(ramka_mapa, width=1024, height=400,)
-map_vidget.set_position(52.23,21)
-map_vidget.set_zoom(5)
-map_vidget.grid(row=0, column=0, columnspan=8)
-
-
-
-root.mainloop()
+    except Exception:
+        return None
+
+bg_color = "#2e2e2e"
+fg_color = "#d3d3d3"
+entry_bg = "#3c3f41"
+btn_bg = "#444444"
+btn_fg = fg_color
+highlight_color = "#ffb6c1"
+
+okno = tk.Tk()
+okno.title("Zarządzanie kompaniami")
+okno.configure(bg=bg_color)
+
+frame_buttons = tk.Frame(okno, bg=bg_color)
+frame_buttons.pack(pady=10)
+
+frame_controls = tk.Frame(okno, bg=bg_color)
+frame_controls.pack()
+
+frame_table = tk.Frame(okno, bg=bg_color)
+frame_table.pack()
+
+frame_map = tk.Frame(okno)
+frame_map.pack()
+
+map_widget = TkinterMapView(frame_map, width=800, height=400)
+map_widget.set_position(52.23, 21.01)
+map_widget.set_zoom(6)
+map_widget.pack()
+
+current_table = None
+tree = None
+entry_filter_kompania = None
+entry_filter_pluton = None
+
+def ustaw_styl_drzewa(tree_widget):
+    style = ttk.Style()
+    style.theme_use('clam')
+    style.configure("Treeview",
+                    background=bg_color,
+                    foreground=fg_color,
+                    fieldbackground=bg_color,
+                    font=('Segoe UI', 10))
+    style.map('Treeview', background=[('selected', highlight_color)],
+              foreground=[('selected', 'black')])
+    tree_widget.tag_configure('oddrow', background="#3c3f41")
+    tree_widget.tag_configure('evenrow', background="#2e2e2e")
+
+
+def pokaz_kompanie():
+    map_widget.delete_all_marker()
+    for nr, miejscowosc in mapa_kompanii.items():
+        wsp = get_coordinates(miejscowosc)
+        if wsp:
+            map_widget.set_marker(
+                wsp[0], wsp[1],
+                text=f"Kompania {nr}",
+                marker_color_circle="#00BFFF",
+                marker_color_outside="#00BFFF"
+            )
+
+
+
+
+
+
+
+def pokaz_tabele(table_name):
+    global current_table, tree, entry_filter_kompania, entry_filter_pluton
+    current_table = table_name
+
+    for widget in frame_controls.winfo_children():
+        widget.destroy()
+    for widget in frame_table.winfo_children():
+        widget.destroy()
+    map_widget.delete_all_marker()
+
+    tk.Label(frame_controls, text="Kompania:", bg=bg_color, fg=fg_color).grid(row=0, column=0, padx=5, pady=2)
+    entry_filter_kompania = tk.Entry(frame_controls, width=5, bg=entry_bg, fg=fg_color, insertbackground=fg_color)
+    entry_filter_kompania.grid(row=0, column=1, padx=5, pady=2)
+
+    tk.Label(frame_controls, text="Pluton:", bg=bg_color, fg=fg_color).grid(row=0, column=2, padx=5, pady=2)
+    entry_filter_pluton = tk.Entry(frame_controls, width=5, bg=entry_bg, fg=fg_color, insertbackground=fg_color)
+    entry_filter_pluton.grid(row=0, column=3, padx=5, pady=2)
+
+    buttons = [
+        ("Filtruj", odswiez),
+        ("Odśwież", odswiez),
+        ("Edytuj", edytuj),
+        ("Usuń", usun),
+        ("Dodaj", dodaj),
+        ("Pokaż szczegóły", pokaz_szczegoly),
+        ("Pokaż kompanie", pokaz_kompanie),
+    ]
+    for i, (txt, cmd) in enumerate(buttons):
+        tk.Button(frame_controls, text=txt, command=cmd, bg=btn_bg, fg=btn_fg, activebackground=highlight_color).grid(
+            row=0, column=4 + i, padx=3, pady=2)
+
+
+    if current_table == "kadra":
+        kolumny = ("id", "lokalizacja", "kompania", "pluton", "stopien", "imie", "nazwisko")
+    else:
+        kolumny = ("id", "kompania", "lokalizacja", "pluton", "imie", "nazwisko")
+
+    tree = ttk.Treeview(frame_table, columns=kolumny, show='headings', height=15)
+    for col in kolumny:
+        tree.heading(col, text=col.capitalize())
+        tree.column(col, width=110, anchor="center")
+    tree.pack()
+
+    ustaw_styl_drzewa(tree)
+
+    odswiez()
+
+def odswiez():
+    for item in tree.get_children():
+        tree.delete(item)
+    map_widget.delete_all_marker()
+
+    komp = entry_filter_kompania.get()
+    plut = entry_filter_pluton.get()
+
+    query = f"SELECT * FROM {current_table} WHERE 1=1"
+    params = []
+
+    if komp:
+        query += " AND kompania = ?"
+        params.append(int(komp))
+    if plut:
+        query += " AND pluton = ?"
+        params.append(int(plut))
+
+    conn = connect_db()
+    c = conn.cursor()
+    c.execute(query, params)
+    rows = c.fetchall()
+    conn.close()
+
+    kolumny = tree["columns"]
+    for i, row in enumerate(rows):
+        tag = 'evenrow' if i % 2 == 0 else 'oddrow'
+        row_dict = dict(zip(kolumny, row))
+        tree.insert('', 'end', values=[row_dict[k] for k in kolumny], tags=(tag,))
+
+def dodaj_marker_na_mapie(miejsce):
+    wsp = get_coordinates(miejsce)
+    if wsp:
+        map_widget.set_marker(wsp[0], wsp[1], text="⭐", marker_color_circle=highlight_color, marker_color_outside=highlight_color)
+
+def pokaz_szczegoly():
+    wybrany = tree.focus()
+    if not wybrany:
+        messagebox.showinfo("Info", "Zaznacz rekord.")
+        return
+    values = tree.item(wybrany)['values']
+    kolumny = tree["columns"]
+    rekord = dict(zip(kolumny, values))
+
+    map_widget.delete_all_marker()
+    lokalizacja = rekord["lokalizacja"]
+    wsp = get_coordinates(lokalizacja)
+    if wsp:
+        map_widget.set_position(*wsp)
+        map_widget.set_zoom(17)
+        map_widget.set_marker(wsp[0], wsp[1], text="⭐", marker_color_circle=highlight_color, marker_color_outside=highlight_color)
+
+
+
+def edytuj():
+    wybrany = tree.focus()
+    if not wybrany:
+        messagebox.showwarning("Błąd", "Zaznacz rekord.")
+        return
+    values = tree.item(wybrany)['values']
+    kolumny = tree["columns"]
+    rekord = dict(zip(kolumny, values))
+    id_rekordu = rekord["id"]
+
+    nowe_okno = tk.Toplevel(okno)
+    nowe_okno.title("Edycja")
+    nowe_okno.configure(bg=bg_color)
+
+    if current_table == "kadra":
+        labels = ["kompania", "pluton", "stopien", "imie", "nazwisko"]
+        dane_start = [rekord["kompania"], rekord["pluton"], rekord["stopien"], rekord["imie"], rekord["nazwisko"]]
+    else:
+        labels = ["kompania", "pluton", "imie", "nazwisko"]
+        dane_start = [rekord["kompania"], rekord["pluton"], rekord["imie"], rekord["nazwisko"]]
+
+    entries = []
+    for i, label in enumerate(labels):
+        tk.Label(nowe_okno, text=label.capitalize(), bg=bg_color, fg=fg_color).grid(row=i, column=0, padx=5, pady=3, sticky='w')
+        e = tk.Entry(nowe_okno, bg=entry_bg, fg=fg_color, insertbackground=fg_color)
+        e.insert(0, dane_start[i])
+        e.grid(row=i, column=1, padx=5, pady=3)
+        entries.append(e)
+
+    def zapisz():
+        dane = [e.get() for e in entries]
+        try:
+            komp_int = int(dane[0])
+            lokalizacja = mapa_kompanii.get(komp_int, "Nieznana")
+        except Exception:
+            messagebox.showerror("Błąd", "Kompania musi być liczbą od 1 do 8")
+            return
+
+        conn = connect_db()
+        c = conn.cursor()
+        if current_table == "kadra":
+            c.execute("UPDATE kadra SET kompania=?, lokalizacja=?, pluton=?, stopien=?, imie=?, nazwisko=? WHERE id=?",
+                      (komp_int, lokalizacja, dane[1], dane[2], dane[3], dane[4], id_rekordu))
+        else:
+            c.execute("UPDATE pchorki SET kompania=?, lokalizacja=?, pluton=?, imie=?, nazwisko=? WHERE id=?",
+                      (komp_int, lokalizacja, dane[1], dane[2], dane[3], id_rekordu))
+        conn.commit()
+        conn.close()
+        nowe_okno.destroy()
+        odswiez()
+
+    tk.Button(nowe_okno, text="Zapisz", command=zapisz, bg=btn_bg, fg=btn_fg, activebackground=highlight_color).grid(row=len(labels), column=0, columnspan=2, pady=10)
+
+def usun():
+    wybrany = tree.focus()
+    if not wybrany:
+        messagebox.showwarning("Błąd", "Zaznacz rekord.")
+        return
+    values = tree.item(wybrany)['values']
+    id_rekordu = values[0]
+    if messagebox.askyesno("Potwierdzenie", "Usunąć rekord?"):
+        conn = connect_db()
+        c = conn.cursor()
+        c.execute(f"DELETE FROM {current_table} WHERE id=?", (id_rekordu,))
+        conn.commit()
+        conn.close()
+        odswiez()
+
+def dodaj():
+    nowe_okno = tk.Toplevel(okno)
+    nowe_okno.title("Dodaj rekord")
+    nowe_okno.configure(bg=bg_color)
+
+    if current_table == "kadra":
+        labels = ["kompania", "pluton", "stopien", "imie", "nazwisko"]
+    else:
+        labels = ["kompania", "pluton", "imie", "nazwisko"]
+
+    entries = []
+    for i, label in enumerate(labels):
+        tk.Label(nowe_okno, text=label.capitalize(), bg=bg_color, fg=fg_color).grid(row=i, column=0, padx=5, pady=3, sticky='w')
+        e = tk.Entry(nowe_okno, bg=entry_bg, fg=fg_color, insertbackground=fg_color)
+        e.grid(row=i, column=1, padx=5, pady=3)
+        entries.append(e)
+
+    def zapisz():
+        dane = [e.get() for e in entries]
+        try:
+            komp_int = int(dane[0])
+            lokalizacja = mapa_kompanii.get(komp_int, "Nieznana")
+        except Exception:
+            messagebox.showerror("Błąd", "Kompania musi być liczbą od 1 do 8")
+            return
+
+        conn = connect_db()
+        c = conn.cursor()
+        if current_table == "kadra":
+            c.execute("INSERT INTO kadra (kompania, lokalizacja, pluton, stopien, imie, nazwisko) VALUES (?, ?, ?, ?, ?, ?)",
+                      (komp_int, lokalizacja, dane[1], dane[2], dane[3], dane[4]))
+        else:
+            c.execute("INSERT INTO pchorki (kompania, lokalizacja, pluton, imie, nazwisko) VALUES (?, ?, ?, ?, ?)",
+                      (komp_int, lokalizacja, dane[1], dane[2], dane[3]))
+        conn.commit()
+        conn.close()
+        nowe_okno.destroy()
+        odswiez()
+
+    tk.Button(nowe_okno, text="Dodaj", command=zapisz, bg=btn_bg, fg=btn_fg, activebackground=highlight_color).grid(row=len(labels), column=0, columnspan=2, pady=10)
+
+tk.Button(frame_buttons, text="Podchorążowie", width=20, command=lambda: pokaz_tabele("pchorki"), bg=btn_bg, fg=btn_fg, activebackground=highlight_color).pack(side='left', padx=20)
+tk.Button(frame_buttons, text="Kadra", width=20, command=lambda: pokaz_tabele("kadra"), bg=btn_bg, fg=btn_fg, activebackground=highlight_color).pack(side='left', padx=20)
+
+okno.mainloop()
