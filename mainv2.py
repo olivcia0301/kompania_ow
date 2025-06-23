@@ -164,7 +164,7 @@ cursor.executemany("""
 #         nazwisko = random.choice(nazwiska)
 #         stopien = 'ppor.'
 #         rekordy.append((lokalizacja, kompania, pluton, stopien, imie, nazwisko))
-#
+#pchorki
 #     imie = random.choice(imiona)
 #     nazwisko = random.choice(nazwiska)
 #     stopien = random.choice(stopnie_dowodcy)
